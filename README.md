@@ -1,1 +1,95 @@
-# Optipc
+# OptiPC — Optimiseur de performances pour Windows
+
+Application de bureau (Electron) qui diagnostique, surveille, nettoie et sécurise un PC Windows 10/11.
+
+## Fonctions
+
+| Écran | Ce qu'il fait |
+|---|---|
+| **Tableau de bord** | Score de santé sur 100 et liste de problèmes classés (critique / attention / conseil), chacun avec un bouton qui mène à sa solution. |
+| **Surveillance** | Processeur (global et par cœur), mémoire, réseau en temps réel, espace disque, liste des processus (tri, recherche, regroupement, fermeture). Les processus système essentiels ne peuvent pas être fermés. |
+| **Nettoyage** | Fichiers temporaires utilisateur et Windows, caches Chrome/Edge/Brave/Firefox, miniatures, rapports de plantage, cache Windows Update, corbeille. Aperçu de l'espace récupérable avant toute suppression. |
+| **Démarrage** | Liste des programmes lancés à l'ouverture de session (registre + dossiers Démarrage) avec éditeur. Désactivation réversible, par la même méthode que le Gestionnaire des tâches. |
+| **Sécurité** | État de Microsoft Defender, de la protection en temps réel, des définitions et du pare-feu. Analyses rapide, complète, d'un dossier ou d'un fichier. Historique et suppression des menaces. **Analyse avancée** (voir plus bas). |
+| **Réglages** | Mode « Performances élevées », transparence, animations, mode Jeu, enregistrement Game DVR. Point de restauration système automatique avant la première modification. Chaque réglage peut être annulé. |
+
+### Analyse avancée des menaces
+
+Le moteur antivirus est **Microsoft Defender**, intégré à Windows et mis à jour chaque jour par Microsoft. OptiPC y ajoute une inspection heuristique, en lecture seule, qui repère les signes d'infection classiques :
+
+- programmes **non signés** en cours d'exécution, surtout depuis `Temp`, `Téléchargements`, `Public` ou la racine d'`AppData\Roaming` ;
+- entrées de démarrage et **tâches planifiées** suspectes : commandes PowerShell obfusquées (`-EncodedCommand`, `FromBase64String`, `DownloadString`, `IEX`), exécutables placés dans un dossier temporaire, entrées orphelines ;
+- **fichier hosts** détourné ;
+- **exclusions** ajoutées à Defender (technique fréquente des logiciels malveillants) ;
+- **proxy** imposé au système.
+
+Pour chaque élément : empreinte SHA-256, analyse ciblée par Defender, ouverture de l'emplacement, et vérification de l'empreinte sur VirusTotal (seulement si vous cliquez).
+
+## Principes de sécurité
+
+- **Rien n'est supprimé sans confirmation.** Le nettoyage ne touche que des dossiers fixés dans le code. Il ignore les fichiers de moins de 24 h (7 jours pour Windows Update) et ne suit jamais les liens symboliques ni les jonctions.
+- **Tout est réversible** : les valeurs d'origine des réglages sont sauvegardées (`%APPDATA%\OptiPC\tweaks-backup.json`), et les programmes au démarrage sont désactivés sans être supprimés.
+- **Aucune injection de commande possible** : les paramètres sont transmis à PowerShell en JSON par variable d'environnement, jamais insérés dans le texte du script.
+- **Interface isolée** : `contextIsolation`, `sandbox`, pas d'accès Node.js et une politique de sécurité du contenu (CSP) stricte. L'interface ne peut appeler qu'une liste fermée de fonctions, et chaque paramètre est revérifié côté système (un processus est fermé seulement si son nom correspond encore ; un élément de démarrage est modifié seulement s'il figure dans une énumération fraîche).
+- **Aucune donnée envoyée sur Internet.**
+
+## Lancer en développement
+
+Prérequis : [Node.js](https://nodejs.org) 20 ou plus récent.
+
+```bash
+npm install
+```
+
+```bash
+npm start
+```
+
+Pour accéder à toutes les fonctions en développement, ouvrez le terminal **en tant qu'administrateur**.
+
+## Créer l'installateur Windows
+
+À lancer **sur un PC Windows** :
+
+```bash
+npm run dist:win
+```
+
+Le fichier `dist\OptiPC Setup 0.1.0.exe` est créé. L'application demande les droits administrateur à chaque lancement (`requireAdministrator`).
+
+> L'exécutable n'est pas signé numériquement : Windows SmartScreen affichera « Windows a protégé votre ordinateur ». Pour le distribuer au public, il faudra un certificat de signature de code.
+
+## Tests
+
+```bash
+npm test
+```
+
+25 tests automatiques couvrent : sécurité du nettoyage (liens symboliques, fichiers récents, chemins interdits), règles du diagnostic, garde-fous de fermeture des processus, lecture des réponses de Windows, taille et absence d'interpolation des scripts PowerShell.
+
+## Structure
+
+```
+src/
+  main/                 Processus principal (accès système)
+    main.js             Fenêtre et sécurité Electron
+    preload.js          Pont limité entre l'interface et le système
+    ipc.js              Liste fermée des fonctions appelables
+    lib/
+      powershell.js     Exécution sûre de PowerShell
+      monitor.js        Mesures en direct, processus
+      cleaner.js        Nettoyage du disque
+      startup.js        Programmes au démarrage
+      tweaks.js         Réglages + point de restauration
+      security.js       Defender + analyse avancée
+      diagnostics.js    Détection des problèmes et score
+  renderer/             Interface (HTML/CSS/JS sans framework)
+test/                   Tests automatiques
+build/icon.png          Icône de l'application
+```
+
+## Feuille de route
+
+1. **Windows** : version actuelle.
+2. **macOS** : la surveillance fonctionne déjà. Il restera à écrire les équivalents macOS du nettoyage (caches `~/Library/Caches`, journaux), du démarrage (`LaunchAgents`, éléments de connexion) et de la sécurité (XProtect, Gatekeeper, pare-feu applicatif).
+3. **iOS** : iOS interdit à une application d'optimiser l'iPhone ou d'agir sur un autre appareil. Une app iOS ne pourrait être qu'un **compagnon** : consulter l'état de santé du PC et recevoir des alertes, ce qui suppose un petit service de synchronisation.

@@ -1,0 +1,50 @@
+{
+  "name": "optipc",
+  "productName": "OptiPC",
+  "version": "0.1.0",
+  "description": "Optimiseur de performances pour Windows : diagnostic, surveillance, nettoyage, démarrage, sécurité et réglages.",
+  "main": "src/main/main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dist:win": "electron-builder --win nsis",
+    "dist:win-portable": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "systeminformation": "^5.33.23"
+  },
+  "devDependencies": {
+    "electron": "44.10.2",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.optipc.app",
+    "productName": "OptiPC",
+    "copyright": "© 2026",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png",
+      "requestedExecutionLevel": "requireAdministrator"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "OptiPC",
+      "language": "1036"
+    }
+  }
+}
