@@ -1,0 +1,43 @@
+# Vérification sur une vraie machine Windows (fournie par GitHub, sans token à configurer).
+# À chaque envoi sur main : tests, contrôle Windows en lecture seule, construction de l'installateur.
+name: Windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Tests unitaires
+        run: npm test
+
+      - name: Contrôle Windows en lecture seule
+        run: npm run check:windows
+
+      - name: Construire l'installateur
+        run: npm run dist:win
+
+      - name: Publier l'installateur (onglet Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: OptiPC-installateur-windows
+          path: dist/*.exe
+          if-no-files-found: error
+          retention-days: 30
