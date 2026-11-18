@@ -29,6 +29,7 @@ Pour chaque élément : empreinte SHA-256, analyse ciblée par Defender, ouvertu
 
 - **Rien n'est supprimé sans confirmation.** Le nettoyage ne touche que des dossiers fixés dans le code. Il ignore les fichiers de moins de 24 h et ne suit jamais les liens symboliques ni les jonctions.
 - **Tout est réversible** : les valeurs d'origine des réglages sont sauvegardées (`%APPDATA%\OptiPC\tweaks-backup.json`), et les programmes au démarrage sont désactivés sans être supprimés.
+- **Sécurité Electron** : la [liste de contrôle officielle](https://github.com/electron/electron/blob/main/docs/tutorial/security.md) est appliquée. L'interface est servie par un protocole dédié (`optipc://app/`) qui n'expose que ses propres fichiers, chaque appel au système vérifie son expéditeur, aucune autorisation (caméra, micro, notifications) n'est accordée, et les fusibles inutiles d'Electron sont coupés (`RunAsNode`, `NODE_OPTIONS`, `--inspect`).
 - **Aucune injection de commande possible** : les paramètres sont transmis à PowerShell en JSON par variable d'environnement, jamais insérés dans le texte du script.
 - **Interface isolée** : `contextIsolation`, `sandbox`, pas d'accès Node.js et une politique de sécurité du contenu (CSP) stricte. L'interface ne peut appeler qu'une liste fermée de fonctions, et chaque paramètre est revérifié côté système (un processus est fermé seulement si son nom correspond encore ; un élément de démarrage est modifié seulement s'il figure dans une énumération fraîche).
 - **Mode lecture seule** (interrupteur en bas du menu) : diagnostic et aperçus sans aucune modification du PC. Le refus est appliqué par le processus système, pas seulement par l'interface.
@@ -85,7 +86,7 @@ Chaque lecture système (mesures, nettoyage en mode mesure, démarrage, réglage
 npm test
 ```
 
-31 tests unitaires : sécurité du nettoyage (liens symboliques, fichiers récents, chemins interdits), règles du diagnostic, garde-fous de fermeture des processus, mode lecture seule, lecture des réponses de Windows, scripts PowerShell, cohérence entre l'interface, le relais et le moteur.
+41 tests unitaires : sécurité du nettoyage (liens symboliques, fichiers récents, chemins interdits), règles du diagnostic, garde-fous de fermeture des processus, mode lecture seule, lecture des réponses de Windows, scripts PowerShell, cohérence entre l'interface, le relais et le moteur, politique de sécurité (protocole, liens externes, expéditeurs).
 
 ```bash
 npm run test:e2e
