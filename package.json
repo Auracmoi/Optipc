@@ -9,9 +9,10 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.test.js",
-    "dist:win": "electron-builder --win nsis",
-    "dist:win-portable": "electron-builder --win portable",
-    "test:e2e": "node --test --test-concurrency=1 test/e2e/*.e2e.js"
+    "dist:win": "electron-builder --win nsis --publish never",
+    "dist:win-portable": "electron-builder --win portable --publish never",
+    "test:e2e": "node --test --test-concurrency=1 test/e2e/*.e2e.js",
+    "check:windows": "node scripts/check-windows.js"
   },
   "dependencies": {
     "systeminformation": "^5.33.23"
