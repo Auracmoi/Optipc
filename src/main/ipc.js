@@ -5,6 +5,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const backend = require('./backend-client');
 const config = require('./config');
+const { isTrustedSender } = require('./security-policy');
+
+const UNTRUSTED = Object.freeze({ ok: false, error: 'Appel refusé : origine inconnue.', code: 'UNTRUSTED_SENDER' });
 
 /*
  * Le processus principal ne fait AUCUN travail système lui-même : il relaie les
@@ -50,7 +53,8 @@ function guarded(channel, args) {
 }
 
 function handleLocal(channel, fn) {
-  ipcMain.handle(channel, async (_event, ...args) => {
+  ipcMain.handle(channel, async (event, ...args) => {
+    if (!isTrustedSender(event.senderFrame)) return UNTRUSTED;
     try {
       return { ok: true, data: await fn(...args) };
     } catch (err) {
@@ -66,10 +70,11 @@ function selfPids() {
 
 function register() {
   for (const channel of FORWARDED) {
-    ipcMain.handle(channel, (_event, ...args) => guarded(channel, args));
+    ipcMain.handle(channel, (event, ...args) => (isTrustedSender(event.senderFrame) ? guarded(channel, args) : UNTRUSTED));
   }
   // Fermer un processus : on ajoute la liste des PID de l'application, connue seulement ici.
-  ipcMain.handle('monitor:kill', (_event, pid, name) => guarded('monitor:kill', [pid, name, selfPids()]));
+  ipcMain.handle('monitor:kill', (event, pid, name) =>
+    (isTrustedSender(event.senderFrame) ? guarded('monitor:kill', [pid, name, selfPids()]) : UNTRUSTED));
 
   handleLocal('config:get', () => config.get());
   handleLocal('config:setReadOnly', (value) => config.setReadOnly(value));

@@ -1,11 +1,15 @@
 'use strict';
 
-const { app, BrowserWindow, shell, dialog } = require('electron');
+const { app, BrowserWindow, shell, dialog, protocol, session } = require('electron');
 const path = require('node:path');
 const ipc = require('./ipc');
 const backend = require('./backend-client');
 const log = require('./log');
 const config = require('./config');
+const policy = require('./security-policy');
+
+// Avant que l'application soit prête : protocole optipc:// déclaré comme sûr.
+policy.registerScheme(protocol);
 
 let mainWindow = null;
 
@@ -41,16 +45,12 @@ function createWindow() {
   // Filet de sécurité : la fenêtre s'affiche même si le premier rendu tarde.
   setTimeout(show, 4000);
 
-  win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html')).catch((err) => {
+  // L'interface est servie par optipc://app/ (seulement le dossier renderer), jamais par file://.
+  win.loadURL(policy.INDEX_URL).catch((err) => {
     log.write(`Chargement de l'interface impossible : ${err.message}`);
   });
 
-  // L'interface ne peut ni naviguer ailleurs ni ouvrir de fenêtres : les liens https s'ouvrent dans le navigateur.
-  win.webContents.on('will-navigate', (e) => e.preventDefault());
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https:\/\//i.test(url)) shell.openExternal(url);
-    return { action: 'deny' };
-  });
+  // Navigation, nouvelles fenêtres et autorisations : voir security-policy.js (appliqué à toute page).
 
   // Journalisation des incidents pour pouvoir les diagnostiquer.
   win.webContents.on('did-fail-load', (_e, code, desc, url) => log.write(`Échec de chargement ${code} ${desc} ${url}`));
@@ -92,6 +92,7 @@ function start() {
   app.whenReady().then(() => {
     const userDataDir = app.getPath('userData');
     log.init(userDataDir);
+    policy.install({ app, protocol, session, shell });
     log.write(`Démarrage d'OptiPC ${app.getVersion()} (Electron ${process.versions.electron}, ${process.platform} ${process.arch})`);
     config.load(userDataDir);
     backend.start({ userDataDir });

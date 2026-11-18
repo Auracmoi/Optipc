@@ -13,7 +13,7 @@ const path = require('node:path');
 const { _electron: electron } = require('playwright');
 
 const ROOT = path.join(__dirname, '..', '..');
-const NOISE = /dbus|gpu|viz_main|libva|GLib|Fontconfig|ALSA|Gtk|sandbox/i;
+const NOISE = /dbus|gpu|viz_main|libva|GLib|Fontconfig|ALSA|Gtk|sandbox|Debugger (ending|listening)|nodejs\.org\/(en\/docs|learn)/i;
 
 async function launch(userDataDir) {
   const app = await electron.launch({
@@ -53,6 +53,13 @@ test('lancement réel : interface prête, fenêtre réactive, moteur séparé', 
     }
     const live = await win.evaluate(() => window.api.monitor.live());
     assert.equal(live.ok, true, 'mesures en direct');
+    // Interface servie par le protocole dédié, sans accès aux autres fichiers.
+    assert.match(await win.evaluate(() => location.href), /^optipc:\/\/app\//);
+    // (L'impossibilité de lire un fichier hors de l'interface est testée dans test/security-policy.test.js ;
+    // en plus, la politique de sécurité de la page interdit toute requête : connect-src 'none'.)
+    // Aucune autorisation accordée (n°5 de la liste de contrôle Electron).
+    const perm = await win.evaluate(async () => (await navigator.permissions.query({ name: 'notifications' })).state);
+    assert.notEqual(perm, 'granted');
     assert.deepEqual(errors, []);
   } finally {
     await app.close();
