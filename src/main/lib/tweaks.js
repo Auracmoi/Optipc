@@ -88,7 +88,11 @@ if ($list -notmatch [regex]::Escape($guid)) {
   powercfg -duplicatescheme $guid $guid | Out-Null
 }
 powercfg /setactive $guid
-if ($LASTEXITCODE -ne 0) { throw "Impossible d'activer ce mode d'alimentation." }
+$active = (powercfg /getactivescheme) | Out-String
+# Vérification : sur les PC en veille moderne, Windows peut accepter la commande sans changer de mode.
+if ($LASTEXITCODE -ne 0 -or $active -notmatch [regex]::Escape($guid)) {
+  throw "Windows n'a pas activé ce mode d'alimentation. Sur les PC récents en veille moderne, il n'existe pas : choisissez « Meilleures performances » dans Paramètres > Système > Alimentation > Mode d'alimentation."
+}
 Out-Json @{ ok = $true }
 `;
 

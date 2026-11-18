@@ -100,8 +100,13 @@ Out-Json @($items)
 const TOGGLE_SCRIPT = `
 $key = $OptArgs.approvedKey
 if (-not (Test-Path -Path $key)) { New-Item -Path $key -Force | Out-Null }
-if ($OptArgs.enabled) { $first = 2 } else { $first = 3 }
-$bytes = [byte[]]@($first,0,0,0,0,0,0,0,0,0,0,0)
+# Même format que le Gestionnaire des tâches (12 octets) : 02 + zéros = activé ;
+# 03 + date de désactivation (FILETIME UTC, 8 octets) = désactivé.
+if ($OptArgs.enabled) {
+  $bytes = [byte[]]@(2,0,0,0,0,0,0,0,0,0,0,0)
+} else {
+  $bytes = [byte[]](@(3,0,0,0) + [BitConverter]::GetBytes([DateTime]::UtcNow.ToFileTimeUtc()))
+}
 New-ItemProperty -Path $key -Name $OptArgs.name -Value $bytes -PropertyType Binary -Force | Out-Null
 Out-Json @{ ok = $true }
 `;
