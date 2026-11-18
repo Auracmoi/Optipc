@@ -22,6 +22,8 @@
 }
 
 * { box-sizing: border-box; }
+/* L'attribut hidden doit toujours l'emporter (sinon .btn { display: inline-flex } le rend visible). */
+[hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body {
   background: var(--bg);

@@ -217,7 +217,7 @@
             ${f.sha256 ? `<div class="hash">SHA-256 : ${esc(f.sha256)}</div>` : ''}
           </div>
           <div class="row" style="flex-wrap:wrap;justify-content:flex-end;max-width:280px">
-            ${f.path ? `<button class="btn btn-sm" data-scan-file="${esc(f.path)}" data-defender data-scan ${defenderUsable ? '' : 'disabled data-locked="1"'}>${I.radar} Analyser</button>` : ''}
+            ${f.path ? `<button class="btn btn-sm" data-scan-file="${esc(f.path)}" data-write data-defender data-scan ${defenderUsable ? '' : 'disabled data-locked="1"'}>${I.radar} Analyser</button>` : ''}
             ${f.path ? `<button class="btn btn-sm btn-ghost" data-show="${esc(f.path)}" title="Ouvrir l'emplacement">${I.folder}</button>` : ''}
             ${f.sha256 ? `<button class="btn btn-sm btn-ghost" data-vt="${esc(f.sha256)}" title="Vérifier l'empreinte sur VirusTotal (site web)">VirusTotal</button>` : ''}
           </div>
@@ -257,12 +257,12 @@
 
         <h2 class="section">Analyse antivirus <span class="muted" id="last-scan" style="font-size:12.5px"></span></h2>
         <div class="row" style="flex-wrap:wrap">
-          <button class="btn btn-primary" data-scan data-defender data-needs-win data-type="QuickScan">${I.play} Analyse rapide</button>
-          <button class="btn" data-scan data-defender data-needs-win data-type="FullScan">${I.radar} Analyse complète</button>
-          <button class="btn" data-scan data-defender data-needs-win data-custom="folder">${I.folder} Analyser un dossier</button>
-          <button class="btn" data-scan data-defender data-needs-win data-custom="file">${I.search} Analyser un fichier</button>
+          <button class="btn btn-primary" data-write data-scan data-defender data-needs-win data-type="QuickScan">${I.play} Analyse rapide</button>
+          <button class="btn" data-write data-scan data-defender data-needs-win data-type="FullScan">${I.radar} Analyse complète</button>
+          <button class="btn" data-write data-scan data-defender data-needs-win data-custom="folder">${I.folder} Analyser un dossier</button>
+          <button class="btn" data-write data-scan data-defender data-needs-win data-custom="file">${I.search} Analyser un fichier</button>
           <span class="spacer"></span>
-          <button class="btn" id="update-sig" data-defender data-needs-win>${I.download} Mettre à jour les définitions</button>
+          <button class="btn" id="update-sig" data-write data-defender data-needs-win>${I.download} Mettre à jour les définitions</button>
         </div>
         <div id="scan-state"></div>
 

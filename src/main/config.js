@@ -29,11 +29,13 @@ function get() {
 
 function setReadOnly(value) {
   if (typeof value !== 'boolean') throw new Error('Valeur invalide.');
-  current.readOnly = value;
+  const next = { ...current, readOnly: value };
+  // Écrire d'abord : si l'écriture échoue, l'état en mémoire ne change pas.
   if (file) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(current, null, 2), 'utf8');
+    fs.writeFileSync(file, JSON.stringify(next, null, 2), 'utf8');
   }
+  current = next;
   return get();
 }
 

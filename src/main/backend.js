@@ -22,6 +22,12 @@ if (!port) {
   throw new Error('backend.js doit être lancé par utilityProcess.fork().');
 }
 
+// Dossier de données transmis en argument de lancement par backend-client.js.
+const USER_DATA_ARG = '--optipc-user-data=';
+const userDataArg = process.argv.find((a) => a.startsWith(USER_DATA_ARG));
+if (!userDataArg) throw new Error('Dossier de données manquant au lancement du moteur.');
+tweaks.init({ userDataDir: userDataArg.slice(USER_DATA_ARG.length) });
+
 const admin = () => system.isAdmin();
 const emit = (event, payload) => port.postMessage({ event, payload });
 
@@ -57,14 +63,7 @@ const HANDLERS = {
 };
 
 port.on('message', async (msg) => {
-  const { id, type } = msg.data || {};
-
-  if (type === 'init') {
-    tweaks.init({ userDataDir: msg.data.userDataDir });
-    port.postMessage({ id, ok: true, data: true });
-    return;
-  }
-
+  const { id } = msg.data || {};
   const fn = HANDLERS[msg.data?.channel];
   if (!fn) {
     port.postMessage({ id, ok: false, error: `Opération inconnue : ${msg.data?.channel}` });

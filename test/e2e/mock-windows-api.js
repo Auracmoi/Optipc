@@ -26,7 +26,8 @@
   let scan = { running: false, type: null, startedAt: null, finishedAt: null, error: null };
   let scanCb = null;
   let readOnly = false;
-  const WRITES = new Set(['kill', 'clean', 'toggle', 'apply', 'revert', 'restorePoint', 'removeThreats']);
+  // Mêmes opérations protégées que WRITE_CHANNELS dans src/main/ipc.js.
+  const WRITES = new Set(['monitor.kill', 'cleaner.clean', 'startup.toggle', 'tweaks.apply', 'tweaks.revert', 'tweaks.restorePoint', 'security.removeThreats', 'security.scan', 'security.update']);
   const refuse = () => fail('Mode lecture seule activé : aucune modification du PC n\'est possible.');
   window.__calls = []; // journal des appels d'écriture, lu par les tests
   const api = {
@@ -91,10 +92,10 @@
     util: { showItem: () => ok(true), choosePath: () => ok(null), copy: () => ok(true) },
   };
   // Même verrou que le processus principal : en lecture seule, les écritures sont refusées.
-  for (const group of Object.values(api)) {
+  for (const [groupName, group] of Object.entries(api)) {
     if (typeof group !== 'object') continue;
     for (const [name, fn] of Object.entries(group)) {
-      if (!WRITES.has(name)) continue;
+      if (!WRITES.has(`${groupName}.${name}`)) continue;
       group[name] = (...args) => { window.__calls.push(name); return readOnly ? refuse() : fn(...args); };
     }
   }

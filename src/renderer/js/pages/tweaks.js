@@ -17,7 +17,8 @@
       toast(r?.created ? 'Point de restauration créé.' : 'Un point de restauration récent existe déjà : il sera utilisé.', 'success');
       return true;
     } catch (err) {
-      toast(`${err.message} Décochez l'option pour continuer sans point de restauration.`, 'error', 12000);
+      // En lecture seule, le refus n'a rien à voir avec le point de restauration : message tel quel.
+      toast(err.code === 'READ_ONLY' ? err.message : `${err.message} Décochez l'option pour continuer sans point de restauration.`, 'error', 12000);
       return false;
     }
   }

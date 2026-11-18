@@ -10,6 +10,7 @@ const log = require('./log');
  */
 
 const DEFAULT_TIMEOUT = 2 * 60_000;
+const USER_DATA_ARG = '--optipc-user-data=';
 // Opérations longues (analyses antivirus, nettoyage, point de restauration…).
 const LONG_TIMEOUTS = {
   'cleaner:scan': 10 * 60_000,
@@ -39,7 +40,9 @@ function failAll(message) {
 
 function start(options) {
   userDataDir = options.userDataDir;
-  child = utilityProcess.fork(path.join(__dirname, 'backend.js'), [], {
+  const startedAt = Date.now();
+  // Le dossier de données est passé au lancement : disponible avant tout appel, sans message à attendre.
+  child = utilityProcess.fork(path.join(__dirname, 'backend.js'), [`${USER_DATA_ARG}${userDataDir}`], {
     serviceName: 'OptiPC - moteur',
     stdio: 'pipe',
   });
@@ -63,13 +66,13 @@ function start(options) {
     log.write(`Le moteur s'est arrêté (code ${code}).`);
     child = null;
     failAll("Le moteur d'analyse s'est arrêté. Réessayez dans quelques secondes.");
+    // Un moteur qui a tenu plus d'une minute repart avec un compteur neuf (seuls les plantages en boucle sont stoppés).
+    if (Date.now() - startedAt > 60_000) restarts = 0;
     if (!stopping && restarts < 5) {
       restarts += 1;
       setTimeout(() => start({ userDataDir }), 1000);
     }
   });
-
-  send({ type: 'init', userDataDir });
 }
 
 function send(data, timeoutMs = DEFAULT_TIMEOUT) {

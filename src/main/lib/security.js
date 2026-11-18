@@ -228,13 +228,21 @@ async function startScan({ type, path: scanPath }, onDone) {
   ensureWindows("L'analyse antivirus");
   if (!SCAN_TIMEOUTS[type]) throw new Error("Type d'analyse inconnu.");
   if (scanState.running) throw new Error('Une analyse est déjà en cours.');
+  // Réservé tout de suite (avant toute attente) : deux demandes rapprochées ne peuvent pas lancer deux analyses.
+  const previous = { ...scanState };
+  Object.assign(scanState, { running: true, type, path: null, startedAt: Date.now(), finishedAt: null, error: null });
   let target = null;
   if (type === 'CustomScan') {
-    if (typeof scanPath !== 'string' || !path.isAbsolute(scanPath)) throw new Error('Chemin à analyser invalide.');
-    await fs.stat(scanPath).catch(() => { throw new Error("Ce fichier ou dossier n'existe pas."); });
+    try {
+      if (typeof scanPath !== 'string' || !path.isAbsolute(scanPath)) throw new Error('Chemin à analyser invalide.');
+      await fs.stat(scanPath).catch(() => { throw new Error("Ce fichier ou dossier n'existe pas."); });
+    } catch (err) {
+      Object.assign(scanState, previous); // la réservation est annulée
+      throw err;
+    }
     target = path.resolve(scanPath);
+    scanState.path = target;
   }
-  Object.assign(scanState, { running: true, type, path: target, startedAt: Date.now(), finishedAt: null, error: null });
 
   runPowerShell(SCAN_SCRIPT, { args: { type, path: target }, timeoutMs: SCAN_TIMEOUTS[type] })
     .then(() => {})

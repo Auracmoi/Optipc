@@ -25,7 +25,11 @@ function windowsCategories(env = process.env) {
       description: 'Fichiers laissés par les programmes et installateurs (plus de 24 h).',
       requiresAdmin: false,
       minAgeMs: DAY,
-      roots: async () => [env.TEMP || j(local, 'Temp')],
+      roots: async () => {
+        const userTemp = env.TEMP || j(local, 'Temp');
+        // Si TEMP pointe vers le Temp de Windows, il est déjà couvert par la catégorie suivante.
+        return sameDir(userTemp, j(sysRoot, 'Temp')) ? [] : [userTemp];
+      },
     },
     {
       id: 'windows-temp',
@@ -73,6 +77,12 @@ function windowsCategories(env = process.env) {
     // Le cache Windows Update (SoftwareDistribution\Download) est volontairement absent :
     // sa suppression est définitive et n'a pas encore été vérifiée sur un vrai Windows.
   ];
+}
+
+function sameDir(a, b) {
+  if (!a || !b) return false;
+  const norm = (p) => path.win32.resolve(p).replace(/[\\/]+$/, '').toLowerCase();
+  return norm(a) === norm(b);
 }
 
 async function listDirs(dir) {
@@ -167,10 +177,11 @@ async function existingRoots(category) {
   const out = [];
   for (const r of [...new Set(roots)]) {
     try {
+      assertSafeRoot(r); // racine trop proche du disque (ex. TEMP=C:\Temp) : ignorée
       const st = await fs.lstat(r);
       if (st.isDirectory() && !st.isSymbolicLink()) out.push(r);
     } catch {
-      /* absent */
+      /* absente ou refusée */
     }
   }
   return out;
@@ -254,9 +265,21 @@ function getCategories() {
   return windowsCategories();
 }
 
-async function scan({ isAdmin }) {
+// Dernière mesure, réutilisée par le diagnostic pour ne pas re-parcourir tous les caches à chaque fois.
+let lastScan = null; // { at, isAdmin, result }
+
+/**
+ * Mesure l'espace récupérable par catégorie (aucune suppression).
+ * @param {object} opts
+ * @param {boolean} opts.isAdmin
+ * @param {number} [opts.reuseWithinMs]  Réutiliser une mesure plus récente que ce délai (0 = toujours mesurer).
+ */
+async function scan({ isAdmin, reuseWithinMs = 0 }) {
   if (process.platform !== 'win32') {
     return { supported: false, categories: [] };
+  }
+  if (reuseWithinMs > 0 && lastScan && lastScan.isAdmin === isAdmin && Date.now() - lastScan.at < reuseWithinMs) {
+    return lastScan.result;
   }
   const results = [];
   for (const cat of getCategories()) {
@@ -265,11 +288,17 @@ async function scan({ isAdmin }) {
       results.push({ ...base, bytes: 0, files: 0, blocked: true });
       continue;
     }
-    results.push({ ...base, ...(await measureCategory(cat)), blocked: false });
+    try {
+      results.push({ ...base, ...(await measureCategory(cat)), blocked: false });
+    } catch {
+      results.push({ ...base, bytes: 0, files: 0, blocked: false }); // une catégorie illisible n'empêche pas les autres
+    }
   }
   const bin = await measureRecycleBin().catch(() => ({ bytes: 0, files: 0 }));
   results.push({ ...RECYCLE_BIN, ...bin, blocked: false });
-  return { supported: true, categories: results };
+  const result = { supported: true, categories: results };
+  lastScan = { at: Date.now(), isAdmin, result };
+  return result;
 }
 
 let cleaning = false;
@@ -279,12 +308,17 @@ async function clean(ids, { isAdmin }) {
   if (!Array.isArray(ids) || ids.length === 0) throw new Error('Aucune catégorie sélectionnée.');
   if (cleaning) throw new Error('Un nettoyage est déjà en cours.');
   cleaning = true;
+  lastScan = null; // l'espace va changer : la prochaine mesure sera refaite
   try {
     const cats = new Map(getCategories().map((c) => [c.id, c]));
     const report = [];
     for (const id of new Set(ids)) {
       if (id === RECYCLE_BIN.id) {
-        report.push({ id, ...(await emptyRecycleBin()) });
+        try {
+          report.push({ id, ...(await emptyRecycleBin()) });
+        } catch (err) {
+          report.push({ id, freed: 0, deleted: 0, failed: 0, skipped: err.message });
+        }
         continue;
       }
       const cat = cats.get(id);
@@ -293,7 +327,11 @@ async function clean(ids, { isAdmin }) {
         report.push({ id, freed: 0, deleted: 0, failed: 0, skipped: 'Droits administrateur requis' });
         continue;
       }
-      report.push({ id, ...(await cleanCategory(cat)) });
+      try {
+        report.push({ id, ...(await cleanCategory(cat)) });
+      } catch (err) {
+        report.push({ id, freed: 0, deleted: 0, failed: 0, skipped: err.message }); // les autres catégories continuent
+      }
     }
     const totals = report.reduce(
       (t, r) => ({ freed: t.freed + r.freed, deleted: t.deleted + r.deleted, failed: t.failed + r.failed }),

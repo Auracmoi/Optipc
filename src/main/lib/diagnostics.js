@@ -129,7 +129,7 @@ async function run({ isAdmin }) {
     isWin ? safe(tweaks.getPowerScheme()) : null,
     isWin ? safe(security.getStatus()) : null,
     isWin ? safe(security.getThreats()) : null,
-    isWin ? safe(cleaner.scan({ isAdmin })) : null,
+    isWin ? safe(cleaner.scan({ isAdmin, reuseWithinMs: 10 * 60_000 })) : null,
   ]);
 
   const list = procs?.list || [];

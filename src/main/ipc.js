@@ -33,6 +33,8 @@ const WRITE_CHANNELS = new Set([
   'startup:toggle',
   'tweaks:apply', 'tweaks:revert', 'tweaks:restorePoint',
   'security:removeThreats',
+  // Defender peut mettre des fichiers en quarantaine pendant une analyse, et la mise à jour modifie le système.
+  'security:scan', 'security:update',
 ]);
 
 const READ_ONLY_REFUSAL = Object.freeze({
@@ -84,11 +86,12 @@ function register() {
     return true;
   });
   handleLocal('dialog:choosePath', async (kind) => {
-    const win = BrowserWindow.getFocusedWindow();
-    const res = await dialog.showOpenDialog(win, {
+    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+    const options = {
       title: "Choisir ce qu'il faut analyser",
       properties: [kind === 'folder' ? 'openDirectory' : 'openFile'],
-    });
+    };
+    const res = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
     return res.canceled ? null : res.filePaths[0];
   });
   handleLocal('clipboard:write', (text) => {

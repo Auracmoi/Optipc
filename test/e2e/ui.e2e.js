@@ -116,6 +116,8 @@ test('sécurité : analyse rapide et analyse avancée', async (t) => {
   await go(page, 'security');
   await page.waitForSelector('.status-card');
   assert.equal(await page.locator('.status-card').count(), 4);
+  await page.waitForSelector('#threats .list-item');
+  assert.equal(await page.locator('#remove-threats').isVisible(), false, 'aucune menace active : bouton caché');
   await page.click('[data-type="QuickScan"]');
   await page.waitForSelector('.scan-progress .spinner');
   assert.equal(await page.locator('[data-type="FullScan"]').isDisabled(), true, 'une seule analyse à la fois');
