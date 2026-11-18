@@ -4,7 +4,7 @@ Application Electron d'optimisation de PC Windows. Langue du projet : français.
 
 ## Mise à jour automatique du dépôt GitHub
 
-Le propriétaire veut que le dépôt `Auracmoi/optipc` soit mis à jour automatiquement, sans qu'on lui demande.
+Le propriétaire veut que le dépôt `Auracmoi/Optipc` soit mis à jour automatiquement, sans qu'on lui demande.
 
 - Travailler directement sur la branche `main`, sans pull request, sauf demande contraire.
 - À la fin de chaque réponse, le hook `.claude/hooks/auto-sync.sh` fait le commit de toutes les modifications (si `npm test` passe), puis les envoie (push) sur `main`.

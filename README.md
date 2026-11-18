@@ -62,9 +62,22 @@ Pour accéder à toutes les fonctions en développement, ouvrez le terminal **en
 npm run dist:win
 ```
 
-Le fichier `dist\OptiPC Setup 0.1.0.exe` est créé. L'application demande les droits administrateur à chaque lancement (`requireAdministrator`).
+Le fichier `dist\OptiPC Setup 0.1.0.exe` est créé (il est aussi construit automatiquement par GitHub Actions). L'application demande les droits administrateur à chaque lancement (`requireAdministrator`).
 
 > L'exécutable n'est pas signé numériquement : Windows SmartScreen affichera « Windows a protégé votre ordinateur ». Pour le distribuer au public, il faudra un certificat de signature de code.
+
+## Vérifier sur un vrai Windows
+
+1. **Automatiquement, à chaque envoi sur GitHub** : l'onglet *Actions* du dépôt lance sur une machine Windows les tests, le contrôle ci-dessous, puis construit l'installateur. Il se télécharge dans le résumé de l'exécution (« OptiPC-installateur-windows »).
+2. **Sur votre PC, sans rien modifier** : dans un terminal administrateur, à la racine du projet :
+
+```bash
+npm run check:windows
+```
+
+Chaque lecture système (mesures, nettoyage en mode mesure, démarrage, réglages, Defender, analyse avancée, diagnostic) est exécutée et vérifiée. Rien n'est supprimé ni modifié.
+
+3. **Les actions qui modifient le PC** se vérifient à la main, sur une machine de test, avec la liste de la [phase 1 du plan](docs/plan-de-developpement-optipc/02-phase-1-fiabilite/README.md).
 
 ## Tests
 
