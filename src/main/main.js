@@ -1,9 +1,10 @@
 'use strict';
 
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, dialog } = require('electron');
 const path = require('node:path');
 const ipc = require('./ipc');
-const tweaks = require('./lib/tweaks');
+const backend = require('./backend-client');
+const log = require('./log');
 
 let mainWindow = null;
 
@@ -28,18 +29,42 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  const win = mainWindow;
+  let shown = false;
+  const show = () => {
+    if (shown || win.isDestroyed()) return;
+    shown = true;
+    win.show();
+  };
+  win.once('ready-to-show', show);
+  // Filet de sécurité : la fenêtre s'affiche même si le premier rendu tarde.
+  setTimeout(show, 4000);
+
+  win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html')).catch((err) => {
+    log.write(`Chargement de l'interface impossible : ${err.message}`);
+  });
 
   // L'interface ne peut ni naviguer ailleurs ni ouvrir de fenêtres : les liens https s'ouvrent dans le navigateur.
-  mainWindow.webContents.on('will-navigate', (e) => e.preventDefault());
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  win.webContents.on('will-navigate', (e) => e.preventDefault());
+  win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//i.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
+  // Journalisation des incidents pour pouvoir les diagnostiquer.
+  win.webContents.on('did-fail-load', (_e, code, desc, url) => log.write(`Échec de chargement ${code} ${desc} ${url}`));
+  win.webContents.on('render-process-gone', (_e, details) => {
+    log.write(`Processus d'affichage arrêté : ${details.reason} (code ${details.exitCode})`);
+    if (details.reason !== 'clean-exit' && !win.isDestroyed()) win.reload();
+  });
+  win.on('unresponsive', () => log.write('La fenêtre ne répond plus.'));
+  win.on('responsive', () => log.write('La fenêtre répond de nouveau.'));
+  win.webContents.on('console-message', (details) => {
+    if (details.level === 'error') log.write(`[interface] ${details.message}`);
+  });
+
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null;
   });
 }
 
@@ -51,6 +76,11 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function start() {
+  process.on('uncaughtException', (err) => {
+    log.write(`Erreur non gérée : ${err?.stack || err}`);
+    dialog.showErrorBox('OptiPC', `Une erreur inattendue s'est produite :\n${err?.message || err}\n\nJournal : ${log.file || 'indisponible'}`);
+  });
+
   app.on('second-instance', () => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
@@ -59,7 +89,10 @@ function start() {
   });
 
   app.whenReady().then(() => {
-    tweaks.init({ userDataDir: app.getPath('userData') });
+    const userDataDir = app.getPath('userData');
+    log.init(userDataDir);
+    log.write(`Démarrage d'OptiPC ${app.getVersion()} (Electron ${process.versions.electron}, ${process.platform} ${process.arch})`);
+    backend.start({ userDataDir });
     ipc.register();
     createWindow();
 
@@ -68,6 +101,7 @@ function start() {
     });
   });
 
+  app.on('before-quit', () => backend.stop());
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
   });

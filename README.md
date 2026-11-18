@@ -33,6 +33,12 @@ Pour chaque élément : empreinte SHA-256, analyse ciblée par Defender, ouvertu
 - **Interface isolée** : `contextIsolation`, `sandbox`, pas d'accès Node.js et une politique de sécurité du contenu (CSP) stricte. L'interface ne peut appeler qu'une liste fermée de fonctions, et chaque paramètre est revérifié côté système (un processus est fermé seulement si son nom correspond encore ; un élément de démarrage est modifié seulement s'il figure dans une énumération fraîche).
 - **Aucune donnée envoyée sur Internet.**
 
+## Architecture
+
+Tout le travail système (mesures, PowerShell, nettoyage, Defender) s'exécute dans un **processus moteur séparé** (`utilityProcess`). Certaines commandes Windows sont bloquantes ; dans le processus de la fenêtre, elles la gèleraient (fenêtre grise « Ne répond pas »). Le moteur est relancé automatiquement s'il s'arrête, et chaque opération a un délai maximal.
+
+En cas de problème, consultez le journal `%APPDATA%\OptiPC\logs\optipc.log`.
+
 ## Lancer en développement
 
 Prérequis : [Node.js](https://nodejs.org) 20 ou plus récent.
@@ -65,7 +71,7 @@ Le fichier `dist\OptiPC Setup 0.1.0.exe` est créé. L'application demande les d
 npm test
 ```
 
-25 tests automatiques couvrent : sécurité du nettoyage (liens symboliques, fichiers récents, chemins interdits), règles du diagnostic, garde-fous de fermeture des processus, lecture des réponses de Windows, taille et absence d'interpolation des scripts PowerShell.
+28 tests automatiques couvrent : sécurité du nettoyage (liens symboliques, fichiers récents, chemins interdits), règles du diagnostic, garde-fous de fermeture des processus, lecture des réponses de Windows, taille et absence d'interpolation des scripts PowerShell, cohérence entre l'interface, le relais et le moteur.
 
 ## Structure
 
@@ -74,7 +80,10 @@ src/
   main/                 Processus principal (accès système)
     main.js             Fenêtre et sécurité Electron
     preload.js          Pont limité entre l'interface et le système
-    ipc.js              Liste fermée des fonctions appelables
+    ipc.js              Relais : liste fermée des fonctions appelables
+    backend.js          Moteur (processus séparé) : tout le travail système
+    backend-client.js   Lancement, relance automatique et délais du moteur
+    log.js              Journal %APPDATA%\OptiPC\logs\optipc.log
     lib/
       powershell.js     Exécution sûre de PowerShell
       monitor.js        Mesures en direct, processus

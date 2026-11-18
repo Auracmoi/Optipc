@@ -3,19 +3,29 @@
 const { ipcMain, shell, dialog, clipboard, app, BrowserWindow } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
-const system = require('./lib/system');
-const monitor = require('./lib/monitor');
-const cleaner = require('./lib/cleaner');
-const startup = require('./lib/startup');
-const tweaks = require('./lib/tweaks');
-const security = require('./lib/security');
-const diagnostics = require('./lib/diagnostics');
+const backend = require('./backend-client');
 
-/**
- * Chaque appel renvoie { ok: true, data } ou { ok: false, error } : l'interface
- * affiche ainsi des messages d'erreur clairs (et non des traces techniques).
+/*
+ * Le processus principal ne fait AUCUN travail système lui-même : il relaie les
+ * appels de l'interface vers le moteur (processus séparé). La fenêtre reste donc
+ * toujours réactive, même quand Windows met du temps à répondre.
+ *
+ * Chaque appel renvoie { ok: true, data } ou { ok: false, error }.
  */
-function handle(channel, fn) {
+
+// Opérations relayées telles quelles vers le moteur (liste fermée).
+const FORWARDED = [
+  'app:info',
+  'monitor:static', 'monitor:live', 'monitor:processes',
+  'cleaner:scan', 'cleaner:clean',
+  'startup:list', 'startup:toggle',
+  'tweaks:list', 'tweaks:apply', 'tweaks:revert', 'tweaks:restorePoint',
+  'security:status', 'security:update', 'security:scan', 'security:scanState',
+  'security:threats', 'security:removeThreats', 'security:audit',
+  'diagnostics:run',
+];
+
+function handleLocal(channel, fn) {
   ipcMain.handle(channel, async (_event, ...args) => {
     try {
       return { ok: true, data: await fn(...args) };
@@ -25,63 +35,41 @@ function handle(channel, fn) {
   });
 }
 
+/** PID de l'application elle-même (fenêtre, moteur…) : elle ne peut pas se fermer elle-même. */
 function selfPids() {
   return [process.pid, ...app.getAppMetrics().map((m) => m.pid)];
 }
 
 function register() {
-  const admin = () => system.isAdmin();
+  for (const channel of FORWARDED) {
+    ipcMain.handle(channel, (_event, ...args) => backend.call(channel, args));
+  }
+  // Fermer un processus : on ajoute la liste des PID de l'application, connue seulement ici.
+  ipcMain.handle('monitor:kill', (_event, pid, name) => backend.call('monitor:kill', [pid, name, selfPids()]));
 
-  handle('app:info', () => system.getAppInfo());
+  backend.onEvent((event, payload) => {
+    if (event !== 'security:scan-finished') return;
+    for (const w of BrowserWindow.getAllWindows()) w.webContents.send('security:scan-finished', payload);
+  });
 
-  handle('monitor:static', () => monitor.getStaticInfo());
-  handle('monitor:live', () => monitor.getLiveMetrics());
-  handle('monitor:processes', () => monitor.getProcesses());
-  handle('monitor:kill', (pid, name) => monitor.killProcess(pid, name, { selfPids: selfPids() }));
-
-  handle('cleaner:scan', async () => cleaner.scan({ isAdmin: await admin() }));
-  handle('cleaner:clean', async (ids) => cleaner.clean(ids, { isAdmin: await admin() }));
-
-  handle('startup:list', () => startup.list());
-  handle('startup:toggle', async (id, enabled) => startup.setEnabled(id, enabled, { isAdmin: await admin() }));
-
-  handle('tweaks:list', () => tweaks.list());
-  handle('tweaks:apply', (id) => tweaks.apply(id));
-  handle('tweaks:revert', (id) => tweaks.revert(id));
-  handle('tweaks:restorePoint', () => tweaks.createRestorePoint());
-
-  handle('security:status', () => security.getStatus());
-  handle('security:update', () => security.updateSignatures());
-  handle('security:scan', (opts) =>
-    security.startScan(opts || {}, (state) => {
-      for (const w of BrowserWindow.getAllWindows()) w.webContents.send('security:scan-finished', state);
-    }),
-  );
-  handle('security:scanState', () => security.getScanState());
-  handle('security:threats', () => security.getThreats());
-  handle('security:removeThreats', () => security.removeThreats());
-  handle('security:audit', () => security.runAudit());
-
-  handle('diagnostics:run', async () => diagnostics.run({ isAdmin: await admin() }));
-
-  // ---- Utilitaires ----
-  handle('shell:showItem', (p) => {
+  // ---- Utilitaires de l'interface (rapides, sans appel système lourd) ----
+  handleLocal('shell:showItem', (p) => {
     if (typeof p !== 'string' || !path.isAbsolute(p) || !fs.existsSync(p)) throw new Error('Fichier introuvable.');
     shell.showItemInFolder(p);
     return true;
   });
-  handle('dialog:choosePath', async (kind) => {
+  handleLocal('dialog:choosePath', async (kind) => {
     const win = BrowserWindow.getFocusedWindow();
     const res = await dialog.showOpenDialog(win, {
-      title: 'Choisir ce qu\'il faut analyser',
+      title: "Choisir ce qu'il faut analyser",
       properties: [kind === 'folder' ? 'openDirectory' : 'openFile'],
     });
     return res.canceled ? null : res.filePaths[0];
   });
-  handle('clipboard:write', (text) => {
+  handleLocal('clipboard:write', (text) => {
     clipboard.writeText(String(text).slice(0, 10_000));
     return true;
   });
 }
 
-module.exports = { register };
+module.exports = { register, FORWARDED };
