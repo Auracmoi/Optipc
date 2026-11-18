@@ -58,7 +58,7 @@
         <div class="list-footer">
           <div><div class="faint" style="font-size:12px">Espace récupérable sélectionné</div><div class="total" id="total">0 o</div></div>
           <span class="spacer"></span>
-          <button class="btn btn-primary" id="clean-btn">${I.cleaner} Nettoyer</button>
+          <button class="btn btn-primary" id="clean-btn" data-write>${I.cleaner} Nettoyer</button>
         </div>
       </div>
       <p class="faint" style="font-size:12.5px;margin-top:12px">Les fichiers récents (moins de 24 h) et ceux en cours d'utilisation ne sont jamais supprimés. La corbeille n'est pas cochée par défaut : son contenu sera définitivement effacé.</p>`;

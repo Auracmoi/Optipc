@@ -7,6 +7,10 @@ const call = (channel) => (...args) => ipcRenderer.invoke(channel, ...args);
 // Seules ces fonctions sont accessibles à l'interface (pas d'accès direct à Node.js).
 contextBridge.exposeInMainWorld('api', {
   appInfo: call('app:info'),
+  config: {
+    get: call('config:get'),
+    setReadOnly: call('config:setReadOnly'),
+  },
   monitor: {
     staticInfo: call('monitor:static'),
     live: call('monitor:live'),

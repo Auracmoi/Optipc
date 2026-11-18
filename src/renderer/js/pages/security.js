@@ -274,7 +274,7 @@
         <div id="findings"></div>
 
         <h2 class="section">Historique des menaces <span class="spacer"></span>
-          <button class="btn btn-sm btn-danger" id="remove-threats" hidden>${I.x} Supprimer les menaces actives</button></h2>
+          <button class="btn btn-sm btn-danger" id="remove-threats" data-write hidden>${I.x} Supprimer les menaces actives</button></h2>
         <div id="threats"></div>`;
 
       root.addEventListener('click', (e) => {

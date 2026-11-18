@@ -30,7 +30,7 @@ test('chaque opération du moteur est relayée, et inversement', () => {
 });
 
 test("chaque fonction de l'interface correspond à une opération existante", () => {
-  const local = ['shell:showItem', 'dialog:choosePath', 'clipboard:write'];
+  const local = ['shell:showItem', 'dialog:choosePath', 'clipboard:write', 'config:get', 'config:setReadOnly'];
   const known = new Set([...backendChannels(), ...local]);
   for (const c of preloadChannels()) assert.ok(known.has(c), `canal inconnu : ${c}`);
   assert.equal(preloadChannels().length, known.size);

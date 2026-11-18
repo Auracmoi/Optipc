@@ -123,7 +123,7 @@
           <td class="num">
             ${p.protected
               ? `<span class="badge" title="Processus système essentiel">${I.lock.replace('<svg', '<svg width="12" height="12"')} Système</span>`
-              : `<button class="btn btn-sm btn-ghost btn-danger" data-kill="${esc(p.name)}" data-pids="${p.pids.join(',')}">Fermer</button>`}
+              : `<button class="btn btn-sm btn-ghost btn-danger" data-write data-kill="${esc(p.name)}" data-pids="${p.pids.join(',')}">Fermer</button>`}
           </td>
         </tr>`,
       )

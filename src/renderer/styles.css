@@ -279,3 +279,10 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 @keyframes fade { from { opacity: 0; } }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- Mode lecture seule : les actions qui modifient le PC sont grisées (le refus réel se fait côté système) ---- */
+body.read-only [data-write] { opacity: .4; pointer-events: none; }
+.read-only-toggle { gap: 10px; margin-bottom: 10px; color: var(--text-dim); font-size: 13px; cursor: pointer; }
+.read-only-toggle .switch { width: 36px; height: 20px; }
+.read-only-toggle .switch .track::after { width: 14px; height: 14px; }
+.read-only-toggle .switch input:checked + .track::after { transform: translateX(16px); }

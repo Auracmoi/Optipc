@@ -32,7 +32,7 @@
                 <div class="meta mono ellipsis selectable" title="${esc(i.command)}">${esc(i.command)}</div>
               </div>
               ${locked ? '<span class="badge warn" title="Relancez OptiPC en administrateur">Admin requis</span>' : ''}
-              <label class="switch" title="${i.enabled ? 'Désactiver au démarrage' : 'Activer au démarrage'}">
+              <label class="switch" data-write title="${i.enabled ? 'Désactiver au démarrage' : 'Activer au démarrage'}">
                 <input type="checkbox" data-id="${esc(i.id)}" ${i.enabled ? 'checked' : ''} ${locked ? 'disabled' : ''} aria-label="Lancer ${esc(i.name)} au démarrage">
                 <span class="track"></span>
               </label>

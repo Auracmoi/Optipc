@@ -44,7 +44,7 @@
                 </div>
                 <div class="desc">${esc(t.description)}</div>
               </div>
-              <label class="switch" title="${locked ? 'Ce réglage était déjà actif avant OptiPC' : t.applied ? 'Annuler (restaurer la valeur d\'origine)' : 'Appliquer'}">
+              <label class="switch" data-write title="${locked ? 'Ce réglage était déjà actif avant OptiPC' : t.applied ? 'Annuler (restaurer la valeur d\'origine)' : 'Appliquer'}">
                 <input type="checkbox" data-id="${esc(t.id)}" ${t.applied ? 'checked' : ''} ${locked ? 'disabled' : ''} aria-label="${esc(t.title)}">
                 <span class="track"></span>
               </label>
@@ -104,7 +104,7 @@
               <input type="checkbox" class="check" id="auto-restore" checked ${win ? '' : 'disabled'}> Créer automatiquement un point avant la première modification
             </label>
           </div>
-          <button class="btn" id="restore-btn" ${win ? '' : 'disabled'}>${I.restore} Créer maintenant</button>
+          <button class="btn" id="restore-btn" data-write ${win ? '' : 'disabled'}>${I.restore} Créer maintenant</button>
         </div>
         <div id="content">${loading('Lecture des réglages…')}</div>`;
 

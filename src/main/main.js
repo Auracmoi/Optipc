@@ -5,6 +5,7 @@ const path = require('node:path');
 const ipc = require('./ipc');
 const backend = require('./backend-client');
 const log = require('./log');
+const config = require('./config');
 
 let mainWindow = null;
 
@@ -92,6 +93,7 @@ function start() {
     const userDataDir = app.getPath('userData');
     log.init(userDataDir);
     log.write(`Démarrage d'OptiPC ${app.getVersion()} (Electron ${process.versions.electron}, ${process.platform} ${process.arch})`);
+    config.load(userDataDir);
     backend.start({ userDataDir });
     ipc.register();
     createWindow();

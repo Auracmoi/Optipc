@@ -4,6 +4,7 @@ const { ipcMain, shell, dialog, clipboard, app, BrowserWindow } = require('elect
 const fs = require('node:fs');
 const path = require('node:path');
 const backend = require('./backend-client');
+const config = require('./config');
 
 /*
  * Le processus principal ne fait AUCUN travail système lui-même : il relaie les
@@ -25,6 +26,27 @@ const FORWARDED = [
   'diagnostics:run',
 ];
 
+// Opérations qui modifient le PC : refusées en mode lecture seule.
+const WRITE_CHANNELS = new Set([
+  'monitor:kill',
+  'cleaner:clean',
+  'startup:toggle',
+  'tweaks:apply', 'tweaks:revert', 'tweaks:restorePoint',
+  'security:removeThreats',
+]);
+
+const READ_ONLY_REFUSAL = Object.freeze({
+  ok: false,
+  error: 'Mode lecture seule activé : aucune modification du PC n\'est possible. Désactivez-le dans le menu de gauche.',
+  code: 'READ_ONLY',
+});
+
+/** Relaie une opération vers le moteur, sauf si elle modifie le PC en mode lecture seule. */
+function guarded(channel, args) {
+  if (WRITE_CHANNELS.has(channel) && config.get().readOnly) return Promise.resolve(READ_ONLY_REFUSAL);
+  return backend.call(channel, args);
+}
+
 function handleLocal(channel, fn) {
   ipcMain.handle(channel, async (_event, ...args) => {
     try {
@@ -42,10 +64,13 @@ function selfPids() {
 
 function register() {
   for (const channel of FORWARDED) {
-    ipcMain.handle(channel, (_event, ...args) => backend.call(channel, args));
+    ipcMain.handle(channel, (_event, ...args) => guarded(channel, args));
   }
   // Fermer un processus : on ajoute la liste des PID de l'application, connue seulement ici.
-  ipcMain.handle('monitor:kill', (_event, pid, name) => backend.call('monitor:kill', [pid, name, selfPids()]));
+  ipcMain.handle('monitor:kill', (_event, pid, name) => guarded('monitor:kill', [pid, name, selfPids()]));
+
+  handleLocal('config:get', () => config.get());
+  handleLocal('config:setReadOnly', (value) => config.setReadOnly(value));
 
   backend.onEvent((event, payload) => {
     if (event !== 'security:scan-finished') return;
@@ -72,4 +97,4 @@ function register() {
   });
 }
 
-module.exports = { register, FORWARDED };
+module.exports = { register, FORWARDED, WRITE_CHANNELS, guarded };
