@@ -10,7 +10,8 @@
     "start": "electron .",
     "test": "node --test test/*.test.js",
     "dist:win": "electron-builder --win nsis",
-    "dist:win-portable": "electron-builder --win portable"
+    "dist:win-portable": "electron-builder --win portable",
+    "test:e2e": "node --test --test-concurrency=1 test/e2e/*.e2e.js"
   },
   "dependencies": {
     "systeminformation": "^5.33.23"

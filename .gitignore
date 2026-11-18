@@ -7,3 +7,4 @@ dist/
 *.pem
 *.key
 *.pfx
+test/e2e/screenshots/

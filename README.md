@@ -31,6 +31,7 @@ Pour chaque élément : empreinte SHA-256, analyse ciblée par Defender, ouvertu
 - **Tout est réversible** : les valeurs d'origine des réglages sont sauvegardées (`%APPDATA%\OptiPC\tweaks-backup.json`), et les programmes au démarrage sont désactivés sans être supprimés.
 - **Aucune injection de commande possible** : les paramètres sont transmis à PowerShell en JSON par variable d'environnement, jamais insérés dans le texte du script.
 - **Interface isolée** : `contextIsolation`, `sandbox`, pas d'accès Node.js et une politique de sécurité du contenu (CSP) stricte. L'interface ne peut appeler qu'une liste fermée de fonctions, et chaque paramètre est revérifié côté système (un processus est fermé seulement si son nom correspond encore ; un élément de démarrage est modifié seulement s'il figure dans une énumération fraîche).
+- **Mode lecture seule** (interrupteur en bas du menu) : diagnostic et aperçus sans aucune modification du PC. Le refus est appliqué par le processus système, pas seulement par l'interface.
 - **Aucune donnée envoyée sur Internet.**
 
 ## Architecture
@@ -71,7 +72,13 @@ Le fichier `dist\OptiPC Setup 0.1.0.exe` est créé. L'application demande les d
 npm test
 ```
 
-28 tests automatiques couvrent : sécurité du nettoyage (liens symboliques, fichiers récents, chemins interdits), règles du diagnostic, garde-fous de fermeture des processus, lecture des réponses de Windows, taille et absence d'interpolation des scripts PowerShell, cohérence entre l'interface, le relais et le moteur.
+31 tests unitaires : sécurité du nettoyage (liens symboliques, fichiers récents, chemins interdits), règles du diagnostic, garde-fous de fermeture des processus, mode lecture seule, lecture des réponses de Windows, scripts PowerShell, cohérence entre l'interface, le relais et le moteur.
+
+```bash
+npm run test:e2e
+```
+
+9 tests de bout en bout : la vraie application Electron (lancement, réactivité, moteur séparé, lecture seule conservée au redémarrage) et chaque écran avec un faux PC Windows (`test/e2e/mock-windows-api.js`). Ils demandent Playwright et son Chromium (`npm i -D playwright` puis `npx playwright install chromium`). Sous Linux sans écran, préfixer par `xvfb-run -a`.
 
 ## Structure
 
