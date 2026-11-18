@@ -74,7 +74,7 @@
       return `<div class="banner info">${I.info}<div>OptiPC est conçu pour Windows. Sur ce système, seule la surveillance en direct fonctionne ; les autres fonctions arriveront avec la version macOS.</div></div>`;
     }
     if (!ctx.info.isAdmin) {
-      return `<div class="banner">${I.alert}<div>OptiPC fonctionne sans droits administrateur : certaines fonctions sont limitées (cache Windows Update, démarrage pour tous les utilisateurs, point de restauration…). Faites un clic droit sur OptiPC puis « Exécuter en tant qu'administrateur ».</div></div>`;
+      return `<div class="banner">${I.alert}<div>OptiPC fonctionne sans droits administrateur : certaines fonctions sont limitées (fichiers temporaires de Windows, démarrage pour tous les utilisateurs, point de restauration…). Faites un clic droit sur OptiPC puis « Exécuter en tant qu'administrateur ».</div></div>`;
     }
     return '';
   }

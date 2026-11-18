@@ -48,7 +48,6 @@
         { id: 'browser-cache', label: 'Cache des navigateurs', description: 'Chrome, Edge, Brave et Firefox.', requiresAdmin: false, bytes: 830 * MB, files: 5210, blocked: false },
         { id: 'thumbnails', label: 'Cache des miniatures', description: 'Aperçus d\'images.', requiresAdmin: false, bytes: 120 * MB, files: 9, blocked: false },
         { id: 'crash-dumps', label: 'Rapports de plantage', description: 'Vidages mémoire.', requiresAdmin: true, bytes: 0, files: 0, blocked: true },
-        { id: 'update-cache', label: 'Cache Windows Update', description: 'Mises à jour installées.', requiresAdmin: true, bytes: 0, files: 0, blocked: true },
         { id: 'recycle-bin', label: 'Corbeille', description: 'Fichiers supprimés en attente.', requiresAdmin: false, bytes: 1.1 * GB, files: 40, blocked: false },
       ] }, 600),
       clean: (ids) => ok({ report: [], totals: { freed: 3.2 * GB, deleted: 23500, failed: 37 } }, 800),

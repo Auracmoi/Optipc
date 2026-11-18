@@ -12,8 +12,8 @@ Objectif : chaque action qui modifie le PC est vérifiée sur Windows 10 et 11, 
 
 **Ajouter avant les tests**
 
-- [ ] Mode « lecture seule » : diagnostic et aperçus visibles, aucune modification possible
-- [ ] Retirer le cache Windows Update de la version de test (suppression définitive, non vérifiée)
+- [x] Mode « lecture seule » : diagnostic et aperçus visibles, aucune modification possible
+- [x] Retirer le cache Windows Update de la version de test (suppression définitive, non vérifiée)
 
 **Vérifier, écran par écran**
 

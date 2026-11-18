@@ -70,14 +70,8 @@ function windowsCategories(env = process.env) {
         j(programData, 'Microsoft', 'Windows', 'WER', 'ReportQueue'),
       ],
     },
-    {
-      id: 'update-cache',
-      label: 'Cache Windows Update',
-      description: 'Mises à jour déjà installées (plus de 7 jours).',
-      requiresAdmin: true,
-      minAgeMs: 7 * DAY,
-      roots: async () => [j(sysRoot, 'SoftwareDistribution', 'Download')],
-    },
+    // Le cache Windows Update (SoftwareDistribution\Download) est volontairement absent :
+    // sa suppression est définitive et n'a pas encore été vérifiée sur un vrai Windows.
   ];
 }
 

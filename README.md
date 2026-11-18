@@ -8,7 +8,7 @@ Application de bureau (Electron) qui diagnostique, surveille, nettoie et sécuri
 |---|---|
 | **Tableau de bord** | Score de santé sur 100 et liste de problèmes classés (critique / attention / conseil), chacun avec un bouton qui mène à sa solution. |
 | **Surveillance** | Processeur (global et par cœur), mémoire, réseau en temps réel, espace disque, liste des processus (tri, recherche, regroupement, fermeture). Les processus système essentiels ne peuvent pas être fermés. |
-| **Nettoyage** | Fichiers temporaires utilisateur et Windows, caches Chrome/Edge/Brave/Firefox, miniatures, rapports de plantage, cache Windows Update, corbeille. Aperçu de l'espace récupérable avant toute suppression. |
+| **Nettoyage** | Fichiers temporaires utilisateur et Windows, caches Chrome/Edge/Brave/Firefox, miniatures, rapports de plantage, corbeille. Aperçu de l'espace récupérable avant toute suppression. |
 | **Démarrage** | Liste des programmes lancés à l'ouverture de session (registre + dossiers Démarrage) avec éditeur. Désactivation réversible, par la même méthode que le Gestionnaire des tâches. |
 | **Sécurité** | État de Microsoft Defender, de la protection en temps réel, des définitions et du pare-feu. Analyses rapide, complète, d'un dossier ou d'un fichier. Historique et suppression des menaces. **Analyse avancée** (voir plus bas). |
 | **Réglages** | Mode « Performances élevées », transparence, animations, mode Jeu, enregistrement Game DVR. Point de restauration système automatique avant la première modification. Chaque réglage peut être annulé. |
@@ -27,7 +27,7 @@ Pour chaque élément : empreinte SHA-256, analyse ciblée par Defender, ouvertu
 
 ## Principes de sécurité
 
-- **Rien n'est supprimé sans confirmation.** Le nettoyage ne touche que des dossiers fixés dans le code. Il ignore les fichiers de moins de 24 h (7 jours pour Windows Update) et ne suit jamais les liens symboliques ni les jonctions.
+- **Rien n'est supprimé sans confirmation.** Le nettoyage ne touche que des dossiers fixés dans le code. Il ignore les fichiers de moins de 24 h et ne suit jamais les liens symboliques ni les jonctions.
 - **Tout est réversible** : les valeurs d'origine des réglages sont sauvegardées (`%APPDATA%\OptiPC\tweaks-backup.json`), et les programmes au démarrage sont désactivés sans être supprimés.
 - **Aucune injection de commande possible** : les paramètres sont transmis à PowerShell en JSON par variable d'environnement, jamais insérés dans le texte du script.
 - **Interface isolée** : `contextIsolation`, `sandbox`, pas d'accès Node.js et une politique de sécurité du contenu (CSP) stricte. L'interface ne peut appeler qu'une liste fermée de fonctions, et chaque paramètre est revérifié côté système (un processus est fermé seulement si son nom correspond encore ; un élément de démarrage est modifié seulement s'il figure dans une énumération fraîche).

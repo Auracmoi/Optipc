@@ -106,7 +106,7 @@ test('les catégories Windows ne visent que des dossiers sûrs', async () => {
   };
   const cats = windowsCategories(env);
   const ids = cats.map((c) => c.id);
-  assert.deepEqual(ids, ['user-temp', 'windows-temp', 'browser-cache', 'thumbnails', 'crash-dumps', 'update-cache']);
+  assert.deepEqual(ids, ['user-temp', 'windows-temp', 'browser-cache', 'thumbnails', 'crash-dumps']);
   for (const c of cats) {
     for (const r of (await c.roots()).filter(Boolean)) {
       const parts = r.split('\\').filter(Boolean);
@@ -115,7 +115,8 @@ test('les catégories Windows ne visent que des dossiers sûrs', async () => {
     }
   }
   assert.deepEqual(await cats[1].roots(), ['C:\\Windows\\Temp']);
-  assert.deepEqual(await cats[5].roots(), ['C:\\Windows\\SoftwareDistribution\\Download']);
+  // Jamais le cache Windows Update (suppression définitive non vérifiée).
+  for (const c of cats) assert.ok(!(await c.roots()).some((r) => /SoftwareDistribution/i.test(r || '')), c.id);
   // Variable manquante : aucune racine inventée.
   assert.deepEqual(await windowsCategories({})[1].roots(), [null]);
 });
